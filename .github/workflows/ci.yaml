@@ -63,9 +63,6 @@ jobs:
         run: |-
           if command -v apk > /dev/null; then
             apk add --no-cache bash git curl gnupg
-          elif command -v apt-get > /dev/null; then
-            apt-get update -qq
-            apt-get install git-core -y -qq
           elif command -v yum > /dev/null; then
             if [ "$(rpm -E %{rhel})" == "7" ]; then
               yum-config-manager --add-repo='https://download.copr.fedorainfracloud.org/results/jkroepke/git/epel-$releasever-x86_64/'
@@ -136,19 +133,8 @@ jobs:
     steps:
       - name: Install git & curl
         run: |-
-          if command -v apk > /dev/null; then
-            apk add --no-cache bash git curl gnupg
-          elif command -v apt-get > /dev/null; then
-            apt-get update -qq
-            apt-get install git-core -y -qq
-          elif command -v yum > /dev/null; then
-            if [ "$(rpm -E %{rhel})" == "7" ]; then
-              yum-config-manager --add-repo='https://download.copr.fedorainfracloud.org/results/jkroepke/git/epel-$releasever-x86_64/'
-              rpm --import https://download.copr.fedorainfracloud.org/results/jkroepke/git/pubkey.gpg
-            fi
-
-            yum install -y git-core unzip
-          fi
+          apt-get update -qq
+          apt-get install git-core unzip -y -qq
 
       - uses: actions/cache@v1
         with:
