@@ -134,7 +134,7 @@ jobs:
       - name: Install git & curl
         run: |-
           apt-get update -qq
-          apt-get install git-core unzip curl -y -qq
+          apt-get install git-core unzip curl gnupg -y -qq
 
       - uses: actions/cache@v1
         with:
