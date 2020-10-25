@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-set -eu
+set -eux
 
 # shellcheck disable=SC1090
 . "${SCRIPT_DIR}/commands/dec.sh"
@@ -24,8 +24,8 @@ Typical usage:
 EOF
 }
 
-helm_wrapper_cleanup() {
-    if [ -s "${decrypted_files}" ]; then
+_trap_hook() {
+    if [ -n "${decrypted_files+x}" ]; then
         if [ "${QUIET}" = "false" ]; then
             echo >&2
             # shellcheck disable=SC2016
@@ -33,9 +33,9 @@ helm_wrapper_cleanup() {
         else
             xargs -0 rm >&2 <"${decrypted_files}"
         fi
-    fi
 
-    rm "${decrypted_files}"
+        rm "${decrypted_files}"
+    fi
 }
 
 helm_wrapper() {
@@ -43,9 +43,6 @@ helm_wrapper() {
 
     argc=$#
     j=0
-
-    #cleanup on-the-fly decrypted files
-    trap helm_wrapper_cleanup EXIT
 
     while [ $j -lt $argc ]; do
         case "$1" in
@@ -71,7 +68,12 @@ helm_wrapper() {
                 ;;
             esac
 
-            file_dec="$(file_dec_name "${file}")"
+            if ! real_file=$(_file_get "${file}"); then
+                printf '[helm-secrets] File does not exist: %s\n' "${file}"
+                exit 1
+            fi
+
+            file_dec="$(_file_dec_name "${real_file}")"
             if [ -f "${file_dec}" ]; then
                 set -- "$@" "$file_dec"
 
@@ -79,7 +81,7 @@ helm_wrapper() {
                     printf '[helm-secrets] Decrypt skipped: %s' "${file}" >&2
                 fi
             else
-                if decrypt_helper "${file}"; then
+                if decrypt_helper "${real_file}"; then
                     set -- "$@" "$file_dec"
                     printf '%s\0' "${file_dec}" >>"${decrypted_files}"
 

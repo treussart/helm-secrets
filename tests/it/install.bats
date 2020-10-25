@@ -257,3 +257,20 @@ load '../bats/extensions/bats-file/load'
     assert_success
     assert_output --partial "port: 81"
 }
+
+@test "install: helm install w/ chart + secrets.yaml + http://" {
+    FILE="https://raw.githubusercontent.com/jkroepke/helm-secrets/master/tests/assets/values/sops/secrets.yaml"
+    RELEASE="install-$(date +%s)-${SEED}"
+    create_chart "${TEST_TEMP_DIR}"
+
+    run helm secrets install "${RELEASE}" "${TEST_TEMP_DIR}/chart" --no-hooks -f "${FILE}" 2>&1
+    assert_success
+    assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
+    assert_output --partial "STATUS: deployed"
+    assert_output --partial "[helm-secrets] Removed: "
+    assert [ ! -f "${FILE}.dec" ]
+
+    run kubectl get svc -o yaml -l "app.kubernetes.io/name=chart,app.kubernetes.io/instance=${RELEASE}"
+    assert_success
+    assert_output --partial "port: 81"
+}

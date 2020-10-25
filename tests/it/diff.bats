@@ -237,3 +237,18 @@ load '../bats/extensions/bats-file/load'
     assert_success
     assert_output --partial "port: 81"
 }
+
+@test "diff: helm diff upgrade w/ chart + secrets.yaml + http://" {
+    helm_plugin_install "diff"
+    FILE="https://raw.githubusercontent.com/jkroepke/helm-secrets/master/tests/assets/values/sops/secrets.yaml"
+    RELEASE="diff-$(date +%s)-${SEED}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run helm secrets diff upgrade --no-color --allow-unreleased "${RELEASE}" "${TEST_TEMP_DIR}/chart" -f "${FILE}" 2>&1
+    assert_success
+    assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
+    assert_output --partial "port: 81"
+    assert_output --partial "[helm-secrets] Removed: "
+    assert [ ! -f "${FILE}.dec" ]
+}

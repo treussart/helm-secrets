@@ -237,3 +237,29 @@ load '../bats/extensions/bats-file/load'
     assert_success
     assert_output --partial "port: 81"
 }
+
+@test "template: helm template w/ chart + secrets.yaml + http://" {
+    FILE="https://raw.githubusercontent.com/jkroepke/helm-secrets/master/tests/assets/values/sops/secrets.yaml"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run helm secrets template "${TEST_TEMP_DIR}/chart" -f "${FILE}" 2>&1
+    assert_success
+    assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
+    assert_output --partial "port: 81"
+    assert_output --partial "[helm-secrets] Removed: "
+}
+
+@test "template: helm template w/ chart + secrets.yaml + git+https://" {
+    helm_plugin_install "git"
+    #FILE="git+https://github.com/jkroepke/helm-secrets@assets/values/sops/secrets.yaml?ref=master"
+    FILE="github://jkroepke/helm-secrets:master/tests/assets/values/sops/secrets.yaml"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run helm secrets template "${TEST_TEMP_DIR}/chart" -f "${FILE}" 2>&1
+    assert_success
+    assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
+    assert_output --partial "port: 81"
+    assert_output --partial "[helm-secrets] Removed: "
+}
